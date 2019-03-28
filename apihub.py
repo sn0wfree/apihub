@@ -48,12 +48,38 @@ async def upload_file(req, resp):
         resp.media = {'filename': filename, 'status': 'bad', 'store_status': msg}
 
 
-@api.route("/auto_ml")
-def auto_ml(req, resp):
-    paras = req.media()
-    print(paras['parameters'])
-    resp.media = {'filename': 's', 'status': 'good', 'store_status': 'ok'}
-    pass
+@api.route("/{auto_ml}")
+class auto_ml:
+    def on_request(self, req, resp, *, auto_ml):  # or on_get...
+
+        parameters = self.parse_parameters(req.params)
+        print(parameters)
+        resp.text = f"{auto_ml}, world!"
+        resp.headers.update({'X-Life': '42'})
+        resp.status_code = api.status_codes.HTTP_416
+
+    @staticmethod
+    def parse_pareters(params):
+        pa ={}
+        for key, values in params.items():
+            if values == 'Null':
+                values =None
+            elif values == '[]':
+                values =[]
+            else:
+                print(values)
+
+
+        return {key: values  }
+
+
+# @api.route("/auto_ml")
+# def auto_ml(req, resp):
+#     paras = req.media()
+#
+#     print(paras, paras['parameters'])
+#     resp.media = {'filename': 's', 'status': 'good', 'store_status': 'ok'}
+#     pass
 
 
 # @api.route("/incoming")
