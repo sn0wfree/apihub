@@ -1,47 +1,78 @@
 # coding=utf8
-import time
+import time, os
 import responder
 
 api = responder.API()
+
+data_store_path = './static/'
 
 
 # @api.route("/")
 # def hello_world(req, resp):
 #     resp.text = "hello, world!"
+class FileExistsError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+
+@api.route("/check_file")
+def check_file(req, resp):
+    pass
 
 
 @api.route("/upload_file")
 async def upload_file(req, resp):
     @api.background.task
-    def process_data(data):
-        f = open('./{}'.format(data['file']['filename']), 'w')
-        f.write(data['file']['content'].decode('utf-8'))
-        f.close()
+    def store_data(content, path, filename):
+
+        if not os.path.exists(path):
+            f = open(path, 'wb')
+
+            f.write(content)
+            f.close()
+        else:
+            raise FileExistsError('{} existed! please rename it! '.format(filename))
 
     data = await req.media(format='files')
-    print(data)
-    process_data(data)
+    # data = req.media(format='files')
+    # print(data)
+    filename = data['file']['filename']
+    content = data['file']['content']
+    path = data_store_path + '{}'.format(filename)
 
-    resp.media = {'success': 'ok'}
+    msg = '{} existed! please rename it! '.format(filename)
+    if not os.path.exists(path):
+        store_data(content, path, filename)
+        resp.media = {'filename': filename, 'status': 'good', 'store_status': 'ok'}
+    else:
+        resp.media = {'filename': filename, 'status': 'bad', 'store_status': msg}
 
 
-@api.route("/incoming")
-async def receive_incoming(req, resp):
-    @api.background.task
-    def process_data(data):
-        """Just sleeps for three seconds, as a demo."""
-        time.sleep(3)
+@api.route("/auto_ml")
+def auto_ml(req, resp):
+    paras = req.media()
+    print(paras['parameters'])
+    resp.media = {'filename': 's', 'status': 'good', 'store_status': 'ok'}
+    pass
 
-    # Parse the incoming data as form-encoded.
-    # Note: 'json' and 'yaml' formats are also automatically supported.
-    data = await req.media()
 
-    # Process the data (in the background).
-    process_data(data)
-
-    # Immediately respond that upload was successful.
-    resp.media = {'success': True}
-
+# @api.route("/incoming")
+# async def receive_incoming(req, resp):
+#     @api.background.task
+#     def process_data(data):
+#         """Just sleeps for three seconds, as a demo."""
+#         time.sleep(3)
+#
+#     # Parse the incoming data as form-encoded.
+#     # Note: 'json' and 'yaml' formats are also automatically supported.
+#     data = await req.media()
+#
+#     # Process the data (in the background).
+#     process_data(data)
+#
+#     # Immediately respond that upload was successful.
+#     resp.media = {'success': True}
+#
 
 if __name__ == '__main__':
     api.run(address='0.0.0.0', port=8279)
