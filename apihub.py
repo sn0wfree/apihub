@@ -5,12 +5,18 @@ from tools.uuid_generator import uuid_hash
 
 api = responder.API()
 
-data_store_path = './static/'
+data_store_path = './static/data/'
+# model_store_path = './static/model'
 
 
 # @api.route("/")
 # def hello_world(req, resp):
 #     resp.text = "hello, world!"
+
+
+FileExistsError_msg = 'data {} existed! please do not upload same data! '
+
+
 class FileExistsError(Exception):
     def __init__(self, msg):
         self.msg = msg
@@ -27,7 +33,7 @@ async def upload_file(req, resp):
             f.write(content)
             f.close()
         else:
-            raise FileExistsError('{} existed! please rename it! '.format(filename))
+            raise FileExistsError(FileExistsError_msg.format(filename))
 
     data = await req.media(format='files')
     # data = req.media(format='files')
@@ -38,43 +44,42 @@ async def upload_file(req, resp):
     content = data['file']['content']
     path = data_store_path + '{}'.format(filename)
 
-    msg = '{} existed! please rename it! '.format(filename)
+    msg = FileExistsError_msg.format(filename)
     if not os.path.exists(path):
         print(filename)
         store_data(content, path, filename)
         resp.media = {'dataid': filename, 'status': 'good', 'store_status': 'ok'}
+        resp.status_code = api.status_codes.HTTP_200
     else:
-        resp.media = {'dataid': 'error', 'status': 'bad', 'store_status': msg}
+        resp.media = {'dataid': 'error', 'status': 'duplicates', 'store_status': msg}
+        resp.status_code = api.status_codes.HTTP_409
 
 
 @api.route("/check_file/{dataid}")
 async def check_file(req, resp, *, dataid):
-    print(dataid)
-
     if os.path.exists(data_store_path + dataid):
-        resp.text = 'dataid found!'
+        resp.text = f'{dataid} found!'
         resp.status_code = api.status_codes.HTTP_200
 
     else:
-        resp.text = "dataid not found!"
+        resp.text = f"{dataid} not found!"
         resp.status_code = api.status_codes.HTTP_404
 
 
-
-@api.route("/auto_ml/{auto_ml}")
-class auto_ml(object):
-    def on_request(self, req, resp, *, auto_ml):  # or on_get...
+@api.route("/auto_ml/{dataid}")
+class AutoMl(object):
+    def on_request(self, req, resp, *, dataid):  # or on_get...
 
         parameters = self.parse_parameters(req.params)
         print(parameters)
-        if os.path.exists(data_store_path + auto_ml):
-            result = self.run_program(parameters, data_store_path + auto_ml)
+        if os.path.exists(data_store_path + dataid):
+            result = self.run_program(parameters, data_store_path + dataid)
 
             resp.text = f"{result}"
             # resp.headers.update({'X-Life': '42'})
             resp.status_code = api.status_codes.HTTP_200
         else:
-            resp.text = f"{auto_ml}, No dataset found! Please upload data first!"
+            resp.text = f"{dataid}, No dataset found! Please upload data first!"
             resp.status_code = api.status_codes.HTTP_416
 
     @staticmethod
