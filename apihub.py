@@ -1,6 +1,7 @@
 # coding=utf8
 import time, os
 import responder
+from tools.uuid_generator import uuid_hash
 
 api = responder.API()
 
@@ -13,11 +14,6 @@ data_store_path = './static/'
 class FileExistsError(Exception):
     def __init__(self, msg):
         self.msg = msg
-
-
-@api.route("/check_file")
-def check_file(req, resp):
-    pass
 
 
 @api.route("/upload_file")
@@ -35,42 +31,80 @@ async def upload_file(req, resp):
 
     data = await req.media(format='files')
     # data = req.media(format='files')
-    # print(data)
-    filename = data['file']['filename']
+
+    data_uuid = uuid_hash(str(data))
+
+    filename = data_uuid  # data['file']['filename']
     content = data['file']['content']
     path = data_store_path + '{}'.format(filename)
 
     msg = '{} existed! please rename it! '.format(filename)
     if not os.path.exists(path):
+        print(filename)
         store_data(content, path, filename)
-        resp.media = {'filename': filename, 'status': 'good', 'store_status': 'ok'}
+        resp.media = {'dataid': filename, 'status': 'good', 'store_status': 'ok'}
     else:
-        resp.media = {'filename': filename, 'status': 'bad', 'store_status': msg}
+        resp.media = {'dataid': 'error', 'status': 'bad', 'store_status': msg}
 
 
-@api.route("/{auto_ml}")
-class auto_ml:
+@api.route("/check_file/{dataid}")
+async def check_file(req, resp, *, dataid):
+    print(dataid)
+
+    if os.path.exists(data_store_path + dataid):
+        resp.text = 'dataid found!'
+        resp.status_code = api.status_codes.HTTP_200
+
+    else:
+        resp.text = "dataid not found!"
+        resp.status_code = api.status_codes.HTTP_404
+
+
+
+@api.route("/auto_ml/{auto_ml}")
+class auto_ml(object):
     def on_request(self, req, resp, *, auto_ml):  # or on_get...
 
         parameters = self.parse_parameters(req.params)
         print(parameters)
-        resp.text = f"{auto_ml}, world!"
-        resp.headers.update({'X-Life': '42'})
-        resp.status_code = api.status_codes.HTTP_416
+        if os.path.exists(data_store_path + auto_ml):
+            result = self.run_program(parameters, data_store_path + auto_ml)
+
+            resp.text = f"{result}"
+            # resp.headers.update({'X-Life': '42'})
+            resp.status_code = api.status_codes.HTTP_200
+        else:
+            resp.text = f"{auto_ml}, No dataset found! Please upload data first!"
+            resp.status_code = api.status_codes.HTTP_416
 
     @staticmethod
-    def parse_pareters(params):
-        pa ={}
+    def _load_dataset(dataset):
+        strings = ModelStore._force_read(dataset)
+        return ModelStore._force_read_from_string(strings)
+
+        pass
+
+    @classmethod
+    def run_program(cls, parameters, dataset):
+        # dataset_dict = cls._load_dataset(dataset)
+
+        return parameters, dataset
+
+    @staticmethod
+    def parse_parameters(params):
+        pa = {}
         for key, values in params.items():
             if values == 'Null':
-                values =None
+                values = None
             elif values == '[]':
-                values =[]
+                values = []
+            elif values.isnumeric():
+                values = float(values)
             else:
-                print(values)
+                pass
+            pa[key] = values
 
-
-        return {key: values  }
+        return pa
 
 
 # @api.route("/auto_ml")
