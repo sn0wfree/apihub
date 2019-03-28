@@ -5,12 +5,12 @@ import responder
 api = responder.API()
 
 
-@api.route("/")
-def hello_world(req, resp):
-    resp.text = "hello, world!"
+# @api.route("/")
+# def hello_world(req, resp):
+#     resp.text = "hello, world!"
 
 
-@api.route("/")
+@api.route("/upload_file")
 async def upload_file(req, resp):
     @api.background.task
     def process_data(data):
@@ -19,6 +19,7 @@ async def upload_file(req, resp):
         f.close()
 
     data = await req.media(format='files')
+    print(data)
     process_data(data)
 
     resp.media = {'success': 'ok'}
@@ -43,5 +44,5 @@ async def receive_incoming(req, resp):
 
 
 if __name__ == '__main__':
-    api.run('0.0.0.0:8279')
+    api.run(address='0.0.0.0', port=8279)
     pass
