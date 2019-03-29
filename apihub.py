@@ -2,13 +2,18 @@
 import time, os
 import responder
 from tools.uuid_generator import uuid_hash
-
+from tools.save_link import insert_data
 from auto_ml.core.parameter_parser import ModelStore
 from auto_ml.core.aml import AML
 
+data_store_path = './static/data/'
+
+link_file = './static/link_file.sqlite'
+tableName = 'link'
+model_store_path = './static/model/'
+
 api = responder.API()
 
-data_store_path = './static/data/'
 # model_store_path = './static/model'
 
 
@@ -29,12 +34,16 @@ class FileExistsError(Exception):
 async def upload_file(req, resp):
     @api.background.task
     def store_data(content, path, filename):
-
+        """
+        store data for model
+        :param content: binary data
+        :param path:  store path
+        :param filename:  filename
+        :return:
+        """
         if not os.path.exists(path):
-            f = open(path, 'wb')
-
-            f.write(content)
-            f.close()
+            with open(path, 'wb') as f:
+                f.write(content)
         else:
             raise FileExistsError(FileExistsError_msg.format(filename))
 
@@ -92,6 +101,17 @@ class AutoML(object):
             if os.path.exists(data_store_path + dataid):
                 dataset_dict = self._load_dataset(data_store_path + dataid)
                 result = self.run_program(parameters, dataset_dict)
+
+                model_uuid = uuid_hash(str(ModelStore._save_in_memory(result)))
+                if not os.path.exists(data_store_path + model_uuid):
+                    ModelStore._save(result, model_store_path + model_uuid)
+
+                insert_data(link_file,
+                            model_uuid,
+                            dataid,
+                            model_path=model_store_path,
+                            data_path=data_store_path,
+                            tableName=tableName)
 
                 resp.text = f"{result}"
                 # resp.headers.update({'X-Life': '42'})
