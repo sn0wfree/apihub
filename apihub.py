@@ -2,8 +2,8 @@
 import time, os
 import responder
 from tools.uuid_generator import uuid_hash
-
-
+from auto_ml.core.parameter_parser import ModelStore
+from auto_ml.core.aml import AML
 
 api = responder.API()
 
@@ -100,6 +100,7 @@ class AutoML(object):
 
     @staticmethod
     def _load_dataset(dataset):
+
         strings = ModelStore._force_read(dataset)
         return ModelStore._force_read_from_string(strings)
 
@@ -107,7 +108,7 @@ class AutoML(object):
 
     @classmethod
     def run_program(cls, parameters, dataset):
-        from auto_ml.core.aml import AML
+
         m = AML.run(parameters, dataset)
         # dataset_dict = cls._load_dataset(dataset)
 
