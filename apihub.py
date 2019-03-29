@@ -125,7 +125,7 @@ class AutoML(object):
             elif values == '[]':
                 values = []
             elif values.isnumeric():
-                values = float(values)
+                values = int(values)
             else:
                 pass
             pa[key] = values
