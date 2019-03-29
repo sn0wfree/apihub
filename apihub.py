@@ -2,6 +2,7 @@
 import time, os
 import responder
 from tools.uuid_generator import uuid_hash
+
 from auto_ml.core.parameter_parser import ModelStore
 from auto_ml.core.aml import AML
 
@@ -87,9 +88,10 @@ class AutoML(object):
                 resp.status_code = api.status_codes.HTTP_416
 
         else:
-            print(parameters)
+            print(parameters, type(parameters))
             if os.path.exists(data_store_path + dataid):
-                result = self.run_program(parameters, data_store_path + dataid)
+                dataset_dict = self._load_dataset(data_store_path + dataid)
+                result = self.run_program(parameters, dataset_dict)
 
                 resp.text = f"{result}"
                 # resp.headers.update({'X-Life': '42'})
