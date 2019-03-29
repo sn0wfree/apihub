@@ -83,12 +83,14 @@ class AutoML(object):
     # def on_get(self, req, resp, *, dataid):
     #     if dataid == 'get_supported_model':
     #         parameters = self.parse_parameters(req.params)
-    @api.background.task
-    async def insert_data(self, sqlfile, model_id, data_id, model_path=model_store_path, data_path=data_store_path,
-                    tableName=tableName):
-        insert_data_sync(sqlfile, model_id, data_id, model_path=model_path, data_path=data_path, tableName=tableName)
 
     def on_request(self, req, resp, *, dataid):  # or on_get...
+        @api.background.task
+        def insert_data( sqlfile, model_id, data_id, model_path=model_store_path, data_path=data_store_path,
+                              tableName=tableName):
+            insert_data_sync(sqlfile, model_id, data_id, model_path=model_path, data_path=data_path,
+                             tableName=tableName)
+
         parameters = self.parse_parameters(req.params)
         if dataid == 'getParams':
             if 'type' in parameters:
@@ -110,7 +112,7 @@ class AutoML(object):
                 if not os.path.exists(data_store_path + model_uuid):
                     ModelStore._save(result, model_store_path + model_uuid)
 
-                self.insert_data(link_file,
+                insert_data(link_file,
                             model_uuid,
                             dataid,
                             model_path=model_store_path,
