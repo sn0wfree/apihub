@@ -102,7 +102,7 @@ class AutoML(object):
                 dataset_dict = self._load_dataset(data_store_path + dataid)
                 result = self.run_program(parameters, dataset_dict)
 
-                model_uuid = uuid_hash(str(ModelStore._save_in_memory(result)))
+                model_uuid = uuid_hash(str(ModelStore._save_in_memory(result)))  # generator model id
                 if not os.path.exists(data_store_path + model_uuid):
                     ModelStore._save(result, model_store_path + model_uuid)
 
