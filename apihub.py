@@ -2,7 +2,7 @@
 import time, os
 import responder
 from tools.uuid_generator import uuid_hash
-from tools.save_link import insert_data
+from tools.save_link import insert_data as insert_data_sync
 from auto_ml.core.parameter_parser import ModelStore
 from auto_ml.core.aml import AML
 
@@ -83,6 +83,10 @@ class AutoML(object):
     # def on_get(self, req, resp, *, dataid):
     #     if dataid == 'get_supported_model':
     #         parameters = self.parse_parameters(req.params)
+    @api.background.task
+    async def insert_data(self, sqlfile, model_id, data_id, model_path=model_store_path, data_path=data_store_path,
+                    tableName=tableName):
+        insert_data_sync(sqlfile, model_id, data_id, model_path=model_path, data_path=data_path, tableName=tableName)
 
     def on_request(self, req, resp, *, dataid):  # or on_get...
         parameters = self.parse_parameters(req.params)
@@ -106,7 +110,7 @@ class AutoML(object):
                 if not os.path.exists(data_store_path + model_uuid):
                     ModelStore._save(result, model_store_path + model_uuid)
 
-                insert_data(link_file,
+                self.insert_data(link_file,
                             model_uuid,
                             dataid,
                             model_path=model_store_path,
