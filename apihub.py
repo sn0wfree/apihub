@@ -66,21 +66,35 @@ async def check_file(req, resp, *, dataid):
         resp.status_code = api.status_codes.HTTP_404
 
 
-@api.route("/auto_ml/{dataid}")
-class AutoMl(object):
+@api.route("/AutoML/{dataid}")
+class AutoML(object):
+    # def on_get(self, req, resp, *, dataid):
+    #     if dataid == 'get_supported_model':
+    #         parameters = self.parse_parameters(req.params)
+
     def on_request(self, req, resp, *, dataid):  # or on_get...
-
         parameters = self.parse_parameters(req.params)
-        print(parameters)
-        if os.path.exists(data_store_path + dataid):
-            result = self.run_program(parameters, data_store_path + dataid)
+        if dataid == 'getParams':
+            if 'type' in parameters:
+                result = AML.get_supported_model(parameters['type'], raiseError=False)
 
-            resp.text = f"{result}"
-            # resp.headers.update({'X-Life': '42'})
-            resp.status_code = api.status_codes.HTTP_200
+                resp.text = f"{result}"
+                resp.status_code = api.status_codes.HTTP_200
+            else:
+                resp.text = f"{dataid}, wrong parameters! Please retry! "
+                resp.status_code = api.status_codes.HTTP_416
+
         else:
-            resp.text = f"{dataid}, No dataset found! Please upload data first!"
-            resp.status_code = api.status_codes.HTTP_416
+            print(parameters)
+            if os.path.exists(data_store_path + dataid):
+                result = self.run_program(parameters, data_store_path + dataid)
+
+                resp.text = f"{result}"
+                # resp.headers.update({'X-Life': '42'})
+                resp.status_code = api.status_codes.HTTP_200
+            else:
+                resp.text = f"{dataid}, No dataset found! Please upload data first!"
+                resp.status_code = api.status_codes.HTTP_416
 
     @staticmethod
     def _load_dataset(dataset):
@@ -91,9 +105,11 @@ class AutoMl(object):
 
     @classmethod
     def run_program(cls, parameters, dataset):
+        from auto_ml.core.aml import AML
+        m = AML.run(parameters, dataset)
         # dataset_dict = cls._load_dataset(dataset)
 
-        return parameters, dataset
+        return m
 
     @staticmethod
     def parse_parameters(params):
